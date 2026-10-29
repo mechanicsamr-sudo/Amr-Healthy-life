@@ -1,0 +1,120 @@
+@import "@fontsource/ibm-plex-sans-arabic/400.css";
+@import "@fontsource/ibm-plex-sans-arabic/500.css";
+@import "@fontsource/ibm-plex-sans-arabic/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --bg: 246 247 249;
+  --surface: 255 255 255;
+  --surface-2: 241 243 246;
+  --text: 17 24 39;
+  --muted: 95 105 120;
+  --border: 226 230 236;
+  /* ألوان السلاسل من لوحة مُتحقق منها لعمى الألوان */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --grid: #e5e7eb;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: 13 17 23;
+  --surface: 22 27 34;
+  --surface-2: 31 38 47;
+  --text: 230 237 243;
+  --muted: 150 160 172;
+  --border: 48 56 66;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --grid: #30363d;
+}
+
+html,
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border p-4 shadow-sm;
+    background: rgb(var(--surface));
+    border-color: rgb(var(--border));
+  }
+  .surface-2 {
+    background: rgb(var(--surface-2));
+  }
+  .text-muted {
+    color: rgb(var(--muted));
+  }
+  .border-base {
+    border-color: rgb(var(--border));
+  }
+  .btn {
+    @apply inline-flex min-h-tap items-center justify-center gap-2 rounded-xl px-4 py-2 text-base font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply btn border;
+    background: rgb(var(--surface-2));
+    border-color: rgb(var(--border));
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  .btn-ghost {
+    @apply btn;
+  }
+  .input {
+    @apply min-h-tap w-full rounded-xl border px-3 py-2 text-base outline-none focus:ring-2 focus:ring-brand-500;
+    background: rgb(var(--surface));
+    border-color: rgb(var(--border));
+    color: rgb(var(--text));
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-muted;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full border px-3 py-1 text-sm;
+    border-color: rgb(var(--border));
+  }
+  .chip-active {
+    @apply border-brand-600 bg-brand-600 text-white;
+  }
+}
+
+/* الأرقام والقيم الإنجليزية داخل نص عربي */
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .card {
+    box-shadow: none !important;
+    break-inside: avoid;
+    border-color: #ccc !important;
+    background: white !important;
+  }
+  main {
+    padding-bottom: 0 !important;
+  }
+}
