@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "مركز ذكاء الأنظمة الكهروميكانيكية",
+    "slug": "mep-intelligence-hub",
+    "scheme": "mephub",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.mephub.app",
+      "adaptiveIcon": { "backgroundColor": "#0B3D5C" }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-localization",
+        { "supportsRTL": true, "forcesRTL": true, "supportedLocales": ["ar"] }
+      ]
+    ],
+    "experiments": { "typedRoutes": false }
+  }
+}

@@ -1,0 +1,68 @@
+name: MEP Hub CI
+
+on:
+  push:
+    paths: ["mep-intelligence-hub/**", ".github/workflows/mep-hub-ci.yml"]
+  pull_request:
+    paths: ["mep-intelligence-hub/**", ".github/workflows/mep-hub-ci.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  database-and-backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    defaults:
+      run:
+        working-directory: mep-intelligence-hub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: SQL RLS isolation tests
+        run: |
+          P="psql -h localhost -U postgres -v ON_ERROR_STOP=1 -q"
+          $P -c "create database rls_test"
+          $P -d rls_test -f supabase/tests/supabase_shim.sql
+          for f in supabase/migrations/*.sql; do $P -d rls_test -f "$f"; done
+          $P -d rls_test -f supabase/tests/rls_isolation_test.sql
+      - name: Backend tests
+        working-directory: mep-intelligence-hub/backend
+        run: |
+          pip install -r requirements-dev.txt
+          pytest -q
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mep-intelligence-hub/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mep-intelligence-hub/mobile/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit
+      - name: Android JS bundle builds
+        env:
+          CI: "1"
+          EXPO_PUBLIC_SUPABASE_URL: https://ci.invalid
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          EXPO_PUBLIC_API_URL: https://ci.invalid
+        run: npx expo export --platform android --output-dir /tmp/export
