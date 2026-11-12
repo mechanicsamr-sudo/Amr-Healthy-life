@@ -361,7 +361,7 @@ export default function SettingsPage() {
         </div>
       </Section>
 
-      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 mb-5">
+      <div className={`${dirty || saved ? "sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10" : ""} mb-5`}>
         {err && (
           <div className="mb-2">
             <Alert tone="red">{err}</Alert>
