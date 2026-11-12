@@ -3,37 +3,40 @@
 import Link from "next/link";
 import { useState } from "react";
 import { RED_FLAGS, RED_FLAG_ACTION } from "@/lib/health";
+import { useI18n } from "@/lib/i18n";
 import { IconAlert } from "./icons";
 import { Alert, Modal } from "./ui";
 
 export function RedFlagList() {
+  const { L, pick } = useI18n();
   return (
-    <Alert tone="red" title="أوقف التمرين واطلب المساعدة الطبية فورًا عند:" icon={<IconAlert size={18} />}>
+    <Alert tone="red" title={L("أوقف التمرين واطلب المساعدة الطبية فورًا عند:", "Stop and get medical help immediately if you have:")} icon={<IconAlert size={18} />}>
       <ul className="list-disc space-y-1 ps-4">
         {RED_FLAGS.map((r, i) => (
-          <li key={i}>{r}</li>
+          <li key={i}>{pick(r)}</li>
         ))}
       </ul>
-      <p className="mt-2 font-bold">{RED_FLAG_ACTION}</p>
+      <p className="mt-2 font-bold">{pick(RED_FLAG_ACTION)}</p>
     </Alert>
   );
 }
 
 export function RedFlagButton({ onReport, className = "" }: { onReport?: () => void; className?: string }) {
   const [open, setOpen] = useState(false);
+  const { L } = useI18n();
   return (
     <>
-      <button className={`btn border border-red-300 text-red-700 dark:border-red-800 dark:text-red-300 ${className}`} onClick={() => setOpen(true)}>
-        <IconAlert size={18} /> أعراض خطيرة؟
+      <button className={`btn border border-red-400/60 text-red-600 dark:text-red-300 ${className}`} onClick={() => setOpen(true)}>
+        <IconAlert size={18} /> {L("أعراض خطيرة؟", "Warning signs?")}
       </button>
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="أعراض تستدعي التوقف"
+        title={L("أعراض تستدعي التوقف", "Symptoms that mean stop")}
         footer={
           <div className="grid gap-2">
             <a href="tel:123" className="btn-danger w-full">
-              اتصال بالإسعاف (123 - مصر)
+              {L("اتصال بالإسعاف (123 - مصر)", "Call an ambulance (123 – Egypt)")}
             </a>
             {onReport && (
               <button
@@ -43,7 +46,7 @@ export function RedFlagButton({ onReport, className = "" }: { onReport?: () => v
                   setOpen(false);
                 }}
               >
-                سجّل أنني أوقفت الحصة بسبب أعراض
+                {L("سجّل إني وقفت الحصة بسبب أعراض", "Log that I stopped because of symptoms")}
               </button>
             )}
           </div>
@@ -51,7 +54,11 @@ export function RedFlagButton({ onReport, className = "" }: { onReport?: () => v
       >
         <RedFlagList />
         <p className="mt-3 text-sm text-muted">
-          التطبيق لا يقيّم الأعراض ولا يشخّصها. لمزيد من المعلومات راجع <Link href="/safety/" className="underline">صفحة السلامة</Link>.
+          {L("التطبيق لا يقيّم الأعراض ولا يشخّصها. لمعلومات أكثر راجع", "The app doesn't assess or diagnose symptoms. For more, see the")}{" "}
+          <Link href="/safety/" className="underline">
+            {L("صفحة السلامة", "safety page")}
+          </Link>
+          .
         </p>
       </Modal>
     </>

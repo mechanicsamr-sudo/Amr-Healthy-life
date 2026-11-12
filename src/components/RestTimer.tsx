@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDuration } from "@/lib/dates";
+import { useI18n } from "@/lib/i18n";
 import { IconTimer } from "./icons";
 
 // حالة المؤقت تُحفظ في localStorage كوقت انتهاء مطلق، لذا تستمر بعد تحديث الصفحة أو إغلاقها.
@@ -109,13 +110,14 @@ export function useRestTimer(opts: { sound: boolean; vibrate: boolean }) {
 export type RestTimerApi = ReturnType<typeof useRestTimer>;
 
 export default function RestTimerBar({ timer, defaultSec }: { timer: RestTimerApi; defaultSec: number }) {
+  const { L } = useI18n();
   const active = timer.running || timer.paused || timer.finished;
   return (
     <div
       className={`no-print fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-xl border-t px-3 py-2 ${
-        timer.finished ? "border-brand-500 bg-brand-600 text-white" : "border-base"
+        timer.finished ? "border-transparent" : "border-base"
       }`}
-      style={timer.finished ? undefined : { background: "rgb(var(--surface))" }}
+      style={timer.finished ? { background: "rgb(var(--go))", color: "rgb(var(--on-go))" } : { background: "rgb(var(--surface) / 0.96)" }}
       data-testid="rest-timer"
     >
       <div className="flex items-center gap-2">
@@ -123,32 +125,32 @@ export default function RestTimerBar({ timer, defaultSec }: { timer: RestTimerAp
         <div className="ltr min-w-[4.5rem] text-center text-2xl font-bold tabular-nums" data-testid="rest-remaining" aria-live="polite">
           {active ? formatDuration(timer.secondsLeft ?? 0) : formatDuration(defaultSec)}
         </div>
-        {timer.finished && <span className="text-sm font-bold">انتهت الراحة!</span>}
+        {timer.finished && <span className="text-sm font-bold">{L("انتهت الراحة!", "Rest over!")}</span>}
         <div className="ms-auto flex gap-1">
           {active ? (
             <>
-              <button className="btn-secondary min-h-11 px-3 text-sm" onClick={() => timer.adjust(-15)} aria-label="إنقاص 15 ثانية">
+              <button className="btn-secondary min-h-11 px-3 text-sm" onClick={() => timer.adjust(-15)} aria-label={L("إنقاص 15 ثانية", "Minus 15 seconds")}>
                 −15
               </button>
-              <button className="btn-secondary min-h-11 px-3 text-sm" onClick={() => timer.adjust(15)} aria-label="زيادة 15 ثانية">
+              <button className="btn-secondary min-h-11 px-3 text-sm" onClick={() => timer.adjust(15)} aria-label={L("زيادة 15 ثانية", "Plus 15 seconds")}>
                 +15
               </button>
               {timer.running ? (
                 <button className="btn-secondary min-h-11 px-3 text-sm" onClick={timer.pause}>
-                  إيقاف مؤقت
+                  {L("إيقاف مؤقت", "Pause")}
                 </button>
               ) : timer.paused ? (
                 <button className="btn-secondary min-h-11 px-3 text-sm" onClick={timer.resume}>
-                  استئناف
+                  {L("استئناف", "Resume")}
                 </button>
               ) : null}
               <button className="btn-secondary min-h-11 px-3 text-sm" onClick={timer.stop}>
-                إنهاء
+                {L("إنهاء", "End")}
               </button>
             </>
           ) : (
-            <button className="btn-primary min-h-11 px-4 text-sm" onClick={() => timer.start(defaultSec)}>
-              ابدأ الراحة
+            <button className="btn-secondary min-h-11 px-4 text-sm" onClick={() => timer.start(defaultSec)}>
+              {L("ابدأ الراحة", "Start rest")}
             </button>
           )}
         </div>

@@ -1,5 +1,32 @@
 // الأنواع الأساسية للتطبيق. كل البيانات تُحفظ محليًا على الجهاز.
 
+/** نص باللغتين */
+export interface Bi {
+  ar: string;
+  en: string;
+}
+
+/** نص قديم (عربي فقط) أو ثنائي اللغة */
+export type Text = string | Bi;
+
+export type MistakeCategory = "posture" | "range" | "breathing" | "setup" | "tempo" | "safety";
+
+export interface Mistake {
+  cat: MistakeCategory;
+  title: Bi;
+  why: Bi;
+  fix: Bi;
+}
+
+/** المحتوى التعليمي الإضافي لكل تمرين (الإنجليزية + الأخطاء التفصيلية) */
+export interface ExerciseContent {
+  en: { setup: string[]; steps: string[]; breathing: string; precautions: string[]; guideline: string; reviewRequired?: string };
+  start: Bi;
+  posture: Bi;
+  range: Bi;
+  mistakes: Mistake[];
+}
+
 export type MuscleGroup =
   | "chest"
   | "back"
@@ -75,11 +102,30 @@ export type EquipmentId =
   | "upright_bike"
   | "elliptical"
   | "rowing_machine"
+  | "ez_bar"
+  | "weight_plates"
+  | "flat_bench"
+  | "incline_bench"
+  | "decline_bench"
+  | "cable_crossover"
+  | "functional_trainer"
+  | "cable_pulley"
+  | "triceps_rope"
+  | "straight_bar"
+  | "lat_attachments"
+  | "rear_delt_machine"
+  | "resistance_band"
+  | "medicine_ball"
+  | "stability_ball"
+  | "suspension_trainer"
+  | "foam_roller"
+  | "kettlebell"
+  | "stair_climber"
   | "none";
 
 export type Level = "beginner" | "intermediate" | "advanced";
 export type Load = "low" | "moderate" | "high";
-export type ExerciseKind = "strength" | "cardio";
+export type ExerciseKind = "strength" | "cardio" | "mobility";
 
 export type ImageVerification = "verified" | "unverified" | "missing" | "user_provided";
 
@@ -132,13 +178,13 @@ export interface PlannedExercise {
   unit: PrescriptionUnit;
   restSec: number;
   rpe: string;
-  note?: string;
+  note?: Text;
 }
 
 export interface CardioPlan {
   exerciseId: string;
   minutes: number;
-  intensity: string;
+  intensity: Text;
 }
 
 export interface PlannedSession {
@@ -147,27 +193,31 @@ export interface PlannedSession {
   phase: number; // 1..6
   slot: "A" | "B" | "C";
   index: number; // ترتيب الحصة في البرنامج 0..77
-  name: string;
+  name: Text;
   targetMuscles: MuscleGroup[];
-  warmup: { minutes: number; cardioExerciseId: string; mobility: string[] };
+  /** moves: معرفات حركات الإحماء المصوّر */
+  warmup: { minutes: number; cardioExerciseId: string; mobility: Text[]; moves?: string[] };
   exercises: PlannedExercise[];
   cardio: CardioPlan;
-  cooldown: string[];
+  cooldown: Text[];
   estimatedMinutes: number;
-  weekFocus: string;
+  weekFocus: Text;
   isDeload: boolean;
-  safetyNotes: string[];
+  safetyNotes: Text[];
 }
 
 export interface Phase {
   number: number;
-  nameAr: string;
+  name: Bi;
   weeks: number[];
-  goal: string;
-  progressionRule: string;
+  goal: Bi;
+  progressionRule: Bi;
 }
 
 // ---------- سجلات المستخدم ----------
+
+export type Difficulty = "easy" | "right" | "hard";
+export type Energy = "excellent" | "good" | "average" | "low";
 
 export interface SetLog {
   weight: number | null;
@@ -175,6 +225,8 @@ export interface SetLog {
   rpe: number | null;
   done: boolean;
   ts?: number;
+  /** تقييم سريع بالاختيار: سهل / مناسب / صعب */
+  difficulty?: Difficulty | null;
 }
 
 export interface ExerciseEntry {
@@ -211,6 +263,10 @@ export interface WorkoutLog {
   painAfter: { knee: number | null; back: number | null };
   notes: string;
   redFlagReported: boolean;
+  /** الطاقة في نهاية الحصة (اختيار) */
+  energy?: Energy | null;
+  /** مناطق أُبلغ فيها عن ألم شديد في هذه الحصة؛ لا تُقترح بدائل تحمّلها */
+  severePain?: ("knee" | "back" | "other")[];
 }
 
 export interface Measurement {
@@ -281,7 +337,11 @@ export interface Profile {
 
 export interface Settings {
   profile: Profile;
+  /** وضع العرض: داكن / فاتح / حسب الجهاز */
   theme: "system" | "light" | "dark";
+  /** معرف الثيم (لوحة الألوان) */
+  themeId: import("./themes").ThemeId;
+  language: import("./i18n").Lang;
   equipment: Partial<Record<EquipmentId, Availability>>;
   defaultRestSec: number;
   sound: boolean;

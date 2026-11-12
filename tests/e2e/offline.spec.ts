@@ -18,9 +18,9 @@ test("الصفحات المخزنة تعمل دون اتصال بعد أول ت�
 
   await context.setOffline(true);
   for (const [path, text] of [
-    ["/library/", "دليل العضلات والأجهزة"],
-    ["/progress/", "متابعة التقدم"],
-    ["/workout/?session=w01-A", "ابدأ الحصة"],
+    ["/library/", "مكتبة الأجهزة"],
+    ["/progress/", "التقدم"],
+    ["/workout/?session=w01-A", "الحصة A"],
     ["/library/exercise/?id=leg_press", "دفع الأرجل (ليج برس)"],
     ["/settings/", "الإعدادات"],
   ] as const) {

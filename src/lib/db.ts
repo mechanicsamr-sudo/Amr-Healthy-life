@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import { DEFAULT_START_DATE, DEFAULT_TRAINING_DAYS } from "./schedule";
+import { THEME_MAP } from "./themes";
 import type { Exercise, ExerciseMedia, Measurement, SessionOverride, Settings, WellnessLog, WorkoutLog } from "./types";
 
 // قاعدة البيانات المحلية (IndexedDB). لا يوجد خادم ولا مزامنة سحابية.
@@ -53,7 +54,9 @@ export const DEFAULT_SETTINGS: Settings = {
     startDate: DEFAULT_START_DATE,
     trainingDays: DEFAULT_TRAINING_DAYS,
   },
-  theme: "system",
+  theme: "dark",
+  themeId: "sport",
+  language: "ar",
   equipment: {},
   defaultRestSec: 90,
   sound: true,
@@ -66,6 +69,8 @@ export function mergeSettings(stored: Partial<Settings> | undefined): Settings {
   return {
     ...DEFAULT_SETTINGS,
     ...stored,
+    themeId: THEME_MAP[stored.themeId as keyof typeof THEME_MAP] ? (stored.themeId as Settings["themeId"]) : DEFAULT_SETTINGS.themeId,
+    language: stored.language === "en" ? "en" : "ar",
     profile: {
       ...DEFAULT_SETTINGS.profile,
       ...(stored.profile ?? {}),

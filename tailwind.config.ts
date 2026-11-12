@@ -7,19 +7,22 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"IBM Plex Sans Arabic"', "Tahoma", "system-ui", "sans-serif"],
+        display: ['"Cairo"', '"Oswald"', '"IBM Plex Sans Arabic"', "sans-serif"],
       },
       colors: {
+        // brand-* يتبع لون الثيم المختار تلقائيًا
         brand: {
-          50: "#ecfdf7",
-          100: "#d1faec",
-          200: "#a7f3da",
-          300: "#6ee7c2",
-          400: "#34d3a6",
-          500: "#10b98e",
-          600: "#059674",
-          700: "#047860",
-          800: "#065f4d",
-          900: "#064e40",
+          50: "rgb(var(--accent) / 0.08)",
+          100: "rgb(var(--accent) / 0.14)",
+          200: "rgb(var(--accent) / 0.3)",
+          300: "rgb(var(--accent) / 0.5)",
+          400: "rgb(var(--accent-strong) / <alpha-value>)",
+          500: "rgb(var(--accent) / <alpha-value>)",
+          600: "rgb(var(--accent) / <alpha-value>)",
+          700: "rgb(var(--accent-strong) / <alpha-value>)",
+          800: "rgb(var(--accent-strong) / <alpha-value>)",
+          900: "rgb(var(--accent-strong) / <alpha-value>)",
+          950: "rgb(var(--accent) / 0.12)",
         },
       },
       minHeight: { tap: "3rem" },

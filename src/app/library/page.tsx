@@ -2,149 +2,192 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ExerciseThumb } from "@/components/ExerciseMedia";
 import { IconPlus, IconSearch } from "@/components/icons";
 import { Badge, Loading, PageHeader } from "@/components/ui";
+import { CATEGORIES, EQUIPMENT_INFO, relatedExercises, type EquipmentCategory } from "@/data/equipment";
+import { exerciseText } from "@/lib/exerciseText";
 import { useExercises, useSettings } from "@/lib/hooks";
-import { EQUIPMENT, MUSCLE_ORDER, MUSCLES } from "@/lib/labels";
-import { matchesQuery } from "@/lib/search";
+import { useI18n } from "@/lib/i18n";
+import { EQUIPMENT, LEVELS, MUSCLE_ORDER, MUSCLES } from "@/lib/labels";
+import { matchesQuery, normalize } from "@/lib/search";
 import { equipmentAvailability } from "@/lib/substitution";
 import type { EquipmentId, MuscleGroup } from "@/lib/types";
 
-const FILTER_KEY = "libraryFilters";
+const FILTER_KEY = "libraryFilters2";
 
 export default function LibraryPage() {
-  const { list, loaded } = useExercises();
+  const { list, map, loaded } = useExercises();
   const { settings } = useSettings();
+  const { L, lang, pick } = useI18n();
+  const [tab, setTab] = useState<"exercises" | "equipment">("exercises");
   const [q, setQ] = useState("");
   const [muscle, setMuscle] = useState<MuscleGroup | "all">("all");
-  const [equip, setEquip] = useState<EquipmentId | "all">("all");
+  const [cat, setCat] = useState<EquipmentCategory | "all">("all");
   const [availableOnly, setAvailableOnly] = useState(false);
-  const [kind, setKind] = useState<"all" | "strength" | "cardio">("all");
 
   // تذكر الفلاتر لراحة المستخدم فقط
   useEffect(() => {
     try {
       const f = JSON.parse(localStorage.getItem(FILTER_KEY) || "{}");
+      if (f.tab) setTab(f.tab);
       if (f.muscle) setMuscle(f.muscle);
-      if (f.equip) setEquip(f.equip);
-      if (f.kind) setKind(f.kind);
+      if (f.cat) setCat(f.cat);
       if (f.availableOnly) setAvailableOnly(true);
     } catch {}
   }, []);
   useEffect(() => {
     try {
-      localStorage.setItem(FILTER_KEY, JSON.stringify({ muscle, equip, kind, availableOnly }));
+      localStorage.setItem(FILTER_KEY, JSON.stringify({ tab, muscle, cat, availableOnly }));
     } catch {}
-  }, [muscle, equip, kind, availableOnly]);
+  }, [tab, muscle, cat, availableOnly]);
 
-  const usedEquipment = useMemo(() => {
-    const s = new Set<EquipmentId>();
-    list.forEach((e) => e.equipment.forEach((x) => x !== "none" && s.add(x)));
-    return [...s];
-  }, [list]);
-
-  const filtered = useMemo(
+  const exercises = useMemo(
     () =>
       list.filter(
         (e) =>
           matchesQuery(e, q) &&
           (muscle === "all" || e.primaryMuscles.includes(muscle) || e.secondaryMuscles.includes(muscle)) &&
-          (equip === "all" || e.equipment.includes(equip)) &&
-          (kind === "all" || e.kind === kind) &&
           (!availableOnly || equipmentAvailability(e, settings.equipment) === "available"),
       ),
-    [list, q, muscle, equip, kind, availableOnly, settings.equipment],
+    [list, q, muscle, availableOnly, settings.equipment],
   );
+  const equipment = useMemo(() => {
+    const nq = normalize(q);
+    return EQUIPMENT_INFO.filter((e) => {
+      const name = normalize(`${EQUIPMENT[e.id].ar} ${EQUIPMENT[e.id].en} ${e.id}`);
+      return (
+        (!nq || nq.split(/\s+/).every((t) => name.includes(t))) &&
+        (cat === "all" || e.category === cat) &&
+        (muscle === "all" || e.muscles.includes(muscle)) &&
+        (!availableOnly || (settings.equipment[e.id as EquipmentId] ?? "unknown") === "available")
+      );
+    });
+  }, [q, cat, muscle, availableOnly, settings.equipment]);
 
   if (!loaded) return <Loading />;
+  const availBadge = (v: string) =>
+    v === "available" ? <Badge tone="green">{L("متاح", "Available")}</Badge> : v === "unavailable" ? <Badge tone="red">{L("غير متاح", "Not available")}</Badge> : <Badge>{L("مش عارف", "Not sure")}</Badge>;
 
   return (
     <div>
       <PageHeader
-        title="دليل العضلات والأجهزة"
-        subtitle={`${list.length} تمرين/جهاز`}
+        display
+        title={L("مكتبة الأجهزة", "Equipment library")}
+        subtitle={L(`${list.length} تمرين · ${EQUIPMENT_INFO.length} جهاز وأداة · عربي وإنجليزي`, `${list.length} exercises · ${EQUIPMENT_INFO.length} equipment items`)}
         actions={
-          <Link href="/library/custom/" className="btn-secondary px-3" aria-label="إضافة تمرين مخصص">
+          <Link href="/library/custom/" className="btn-secondary px-3" aria-label={L("إضافة تمرين مخصص", "Add custom exercise")}>
             <IconPlus size={20} />
           </Link>
         }
       />
+
+      <div className="mb-3 grid grid-cols-2 gap-2" role="tablist">
+        <button role="tab" aria-selected={tab === "exercises"} className={`choice ${tab === "exercises" ? "" : ""}`} aria-pressed={tab === "exercises"} onClick={() => setTab("exercises")} data-testid="tab-exercises">
+          {L("التمارين", "Exercises")}
+        </button>
+        <button role="tab" aria-selected={tab === "equipment"} className="choice" aria-pressed={tab === "equipment"} onClick={() => setTab("equipment")} data-testid="tab-equipment">
+          {L("الأجهزة والأدوات", "Equipment")}
+        </button>
+      </div>
 
       <div className="relative mb-3">
         <IconSearch className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" size={20} />
         <input
           type="search"
           className="input ps-10"
-          placeholder="ابحث بالعربي أو الإنجليزي (مثال: leg press، سحب عالي)"
+          placeholder={L("ابحث بالعربي أو الإنجليزي (leg press، سحب عالي، دمبل…)", "Search in English or Arabic (leg press, سحب…)")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          aria-label="بحث"
+          aria-label={L("بحث", "Search")}
           data-testid="library-search"
         />
       </div>
 
-      <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="تصفية حسب العضلة">
+      {tab === "equipment" && (
+        <div className="-mx-4 mb-2 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label={L("التصنيف", "Category")}>
+          <button className={`chip shrink-0 ${cat === "all" ? "chip-active" : ""}`} onClick={() => setCat("all")}>
+            {L("الكل", "All")}
+          </button>
+          {(Object.keys(CATEGORIES) as EquipmentCategory[]).map((c) => (
+            <button key={c} className={`chip shrink-0 ${cat === c ? "chip-active" : ""}`} onClick={() => setCat(c)} aria-pressed={cat === c}>
+              {pick(CATEGORIES[c])}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label={L("العضلة", "Muscle")}>
         <button className={`chip shrink-0 ${muscle === "all" ? "chip-active" : ""}`} onClick={() => setMuscle("all")}>
-          الكل
+          {L("كل العضلات", "All muscles")}
         </button>
         {MUSCLE_ORDER.map((m) => (
           <button key={m} className={`chip shrink-0 ${muscle === m ? "chip-active" : ""}`} onClick={() => setMuscle(m)} aria-pressed={muscle === m}>
-            {MUSCLES[m].ar}
+            {pick(MUSCLES[m])}
           </button>
         ))}
       </div>
-
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <select className="input" value={equip} onChange={(e) => setEquip(e.target.value as EquipmentId | "all")} aria-label="تصفية حسب المعدة">
-          <option value="all">كل المعدات</option>
-          {usedEquipment.map((x) => (
-            <option key={x} value={x}>
-              {EQUIPMENT[x].ar}
-            </option>
-          ))}
-        </select>
-        <select className="input" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} aria-label="النوع">
-          <option value="all">مقاومة وكارديو</option>
-          <option value="strength">مقاومة</option>
-          <option value="cardio">كارديو</option>
-        </select>
-      </div>
       <label className="mb-4 flex items-center gap-2 text-sm">
         <input type="checkbox" className="h-5 w-5" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} />
-        المعدات المتوفرة في صالتي فقط (حسب الإعدادات)
+        {L("المتاح في جيمي فقط (حسب الإعدادات)", "Only what's available in my gym (from Settings)")}
       </label>
 
-      <ul className="space-y-2" data-testid="library-list">
-        {filtered.map((e) => {
-          const av = equipmentAvailability(e, settings.equipment);
-          return (
-            <li key={e.id}>
-              <Link href={`/library/exercise/?id=${encodeURIComponent(e.id)}`} className="card block p-3 active:opacity-80">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-bold">{e.nameAr}</div>
-                    <div className="ltr text-start text-sm text-muted">{e.nameEn}</div>
+      {tab === "exercises" ? (
+        <ul className="grid grid-cols-2 gap-2" data-testid="library-list">
+          {exercises.map((e) => {
+            const t = exerciseText(e, lang);
+            const av = equipmentAvailability(e, settings.equipment);
+            return (
+              <li key={e.id}>
+                <Link href={`/library/exercise/?id=${encodeURIComponent(e.id)}`} className="card block overflow-hidden p-0 active:opacity-80">
+                  <div className="relative">
+                    <ExerciseThumb exercise={e} className="h-28 w-full" rounded="rounded-none" />
+                    <span className={`absolute start-1.5 top-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${e.level === "beginner" ? "level-easy" : e.level === "intermediate" ? "level-med" : "level-hard"}`}>{pick(LEVELS[e.level])}</span>
+                    {e.reviewRequired && <span className="absolute end-1.5 top-1.5 rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{L("مراجعة", "Review")}</span>}
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    {e.reviewRequired && <Badge tone="red">يحتاج مراجعة</Badge>}
-                    {e.custom && <Badge tone="blue">مخصص</Badge>}
-                    {av === "unavailable" && <Badge tone="amber">غير متوفر</Badge>}
+                  <div className="p-2">
+                    <div className="line-clamp-2 text-sm font-bold leading-tight" data-testid="lib-name">
+                      {t.name}
+                    </div>
+                    <div className={`truncate text-[11px] text-muted ${lang === "ar" ? "ltr text-start" : ""}`}>{t.otherName}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <Badge tone="accent">{pick(MUSCLES[e.primaryMuscles[0]])}</Badge>
+                      {av === "unavailable" && <Badge tone="red">{L("غير متاح", "N/A")}</Badge>}
+                      {e.custom && <Badge tone="blue">{L("مخصص", "Custom")}</Badge>}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {e.primaryMuscles.map((m) => (
-                    <Badge key={m} tone="green">
-                      {MUSCLES[m].ar}
-                    </Badge>
-                  ))}
-                  <span className="text-xs text-muted">· {e.equipment.map((x) => EQUIPMENT[x].ar).join("، ")}</span>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-        {filtered.length === 0 && <li className="py-8 text-center text-muted">لا توجد نتائج مطابقة.</li>}
-      </ul>
+                </Link>
+              </li>
+            );
+          })}
+          {exercises.length === 0 && <li className="col-span-2 py-8 text-center text-muted">{L("لا توجد نتائج مطابقة.", "No matching results.")}</li>}
+        </ul>
+      ) : (
+        <ul className="grid grid-cols-2 gap-2" data-testid="equipment-list">
+          {equipment.map((info) => {
+            const rel = relatedExercises(info.id);
+            const picEx = rel.map((id) => map[id]).find(Boolean);
+            return (
+              <li key={info.id}>
+                <Link href={`/equipment/?id=${info.id}`} className="card block overflow-hidden p-0 active:opacity-80" data-testid="equipment-card">
+                  <div className="relative">
+                    {picEx ? <ExerciseThumb exercise={picEx} className="h-28 w-full" rounded="rounded-none" /> : <div className="hero h-28" />}
+                    <span className="absolute end-1.5 top-1.5">{availBadge(settings.equipment[info.id] ?? "unknown")}</span>
+                  </div>
+                  <div className="p-2">
+                    <div className="text-sm font-bold leading-tight">{pick(EQUIPMENT[info.id])}</div>
+                    <div className={`truncate text-[11px] text-muted ${lang === "ar" ? "ltr text-start" : ""}`}>{lang === "ar" ? EQUIPMENT[info.id].en : EQUIPMENT[info.id].ar}</div>
+                    <div className="mt-1 text-[11px] text-accent">
+                      {pick(CATEGORIES[info.category])} · {rel.length} {L("تمارين", "exercises")}
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+          {equipment.length === 0 && <li className="col-span-2 py-8 text-center text-muted">{L("لا توجد نتائج مطابقة.", "No matching results.")}</li>}
+        </ul>
+      )}
     </div>
   );
 }

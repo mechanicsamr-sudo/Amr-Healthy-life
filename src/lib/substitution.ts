@@ -1,5 +1,6 @@
+import { CONTENT } from "@/data/content";
 import { EQUIPMENT, PATTERNS } from "./labels";
-import type { Availability, EquipmentId, Exercise, Level, Load, MovementPattern, MuscleGroup, Profile } from "./types";
+import type { Availability, Bi, EquipmentId, Exercise, Level, Load, MovementPattern, MuscleGroup, Profile } from "./types";
 
 /*
  * محرك البدائل.
@@ -11,6 +12,8 @@ export interface SubstitutionContext {
   equipment: Partial<Record<EquipmentId, Availability>>;
   level: Level;
   conditions: Profile["conditions"];
+  /** مناطق بها ألم شديد في الحصة الحالية: لا نقترح بدائل تحمّلها */
+  severePain?: ("knee" | "back" | "other")[];
 }
 
 export interface Candidate {
@@ -18,15 +21,15 @@ export interface Candidate {
   similarity: number; // 0..100
   muscleSimilarity: number;
   patternSimilarity: number;
-  similarityLabel: string;
+  similarityLabel: Bi;
   availability: Availability;
   levelFit: number; // 0..2
   healthScore: number; // 0..2
-  healthWarnings: string[];
-  differences: string[];
+  healthWarnings: Bi[];
+  differences: Bi[];
   /** هل الملاءمة واضحة بما يكفي للاختيار المباشر؟ إن لم تكن، يجب أن يؤكد المستخدم */
   clearFit: boolean;
-  unclearReasons: string[];
+  unclearReasons: Bi[];
 }
 
 const PATTERN_FAMILY: Partial<Record<MovementPattern, Partial<Record<MovementPattern, number>>>> = {
@@ -83,11 +86,11 @@ export function muscleSimilarity(a: Exercise, b: Exercise): number {
   return max === 0 ? 0 : min / max;
 }
 
-export function similarityLabel(pct: number): string {
-  if (pct >= 80) return "تشابه عالٍ";
-  if (pct >= 60) return "تشابه متوسط";
-  if (pct >= 40) return "تشابه جزئي";
-  return "تشابه ضعيف";
+export function similarityLabel(pct: number): Bi {
+  if (pct >= 80) return { ar: "تشابه عالٍ", en: "High match" };
+  if (pct >= 60) return { ar: "تشابه متوسط", en: "Good match" };
+  if (pct >= 40) return { ar: "تشابه جزئي", en: "Partial match" };
+  return { ar: "تشابه ضعيف", en: "Weak match" };
 }
 
 export function equipmentAvailability(e: Exercise, eq: SubstitutionContext["equipment"]): Availability {
@@ -110,55 +113,61 @@ export function levelFit(e: Exercise, userLevel: Level): number {
 }
 
 /** تقييم التوافق مع القيود الصحية المسجلة. هذا تذكير وليس حكمًا طبيًا. */
-export function healthAssessment(e: Exercise, conditions: Profile["conditions"]): { score: number; warnings: string[] } {
-  const warnings: string[] = [];
+export function healthAssessment(e: Exercise, conditions: Profile["conditions"]): { score: number; warnings: Bi[] } {
+  const warnings: Bi[] = [];
   let score = 2;
   if (e.reviewRequired) {
-    warnings.push(e.reviewRequired);
+    warnings.push({ ar: e.reviewRequired, en: CONTENT[e.id]?.en.reviewRequired ?? "Needs a specialist's review before use." });
     score = 0;
   }
   if (conditions.kneeOA) {
     if (e.kneeLoad === "high") {
-      warnings.push("حمل مرتفع على الركبة مع خشونة الركبة المسجلة.");
+      warnings.push({ ar: "حمل مرتفع على الركبة مع خشونة الركبة المسجلة.", en: "High knee load with your recorded knee osteoarthritis." });
       score = Math.min(score, 0);
     } else if (e.kneeLoad === "moderate") {
-      warnings.push("حمل متوسط على الركبة: استخدم مدى حركة مريحًا وراقب الألم.");
+      warnings.push({ ar: "حمل متوسط على الركبة: استخدم مدى حركة مريحًا وراقب الألم.", en: "Moderate knee load: use a comfortable range and monitor pain." });
       score = Math.min(score, 1);
     }
   }
   if (conditions.backPain) {
     if (e.backLoad === "high") {
-      warnings.push("حمل مرتفع على الظهر مع ألم الظهر المسجل.");
+      warnings.push({ ar: "حمل مرتفع على الظهر مع ألم الظهر المسجل.", en: "High back load with your recorded back pain." });
       score = Math.min(score, 0);
     } else if (e.backLoad === "moderate") {
-      warnings.push("حمل متوسط على الظهر: حافظ على وضع محايد وأوقف الحركة إذا زاد الألم.");
+      warnings.push({ ar: "حمل متوسط على الظهر: حافظ على وضع محايد وأوقف الحركة إذا زاد الألم.", en: "Moderate back load: keep a neutral spine and stop if pain increases." });
       score = Math.min(score, 1);
     }
   }
   if (conditions.bpMeds && e.bpCaution) {
-    warnings.push("تنفس بانتظام ولا تحبس النفس، وانهض ببطء (دواء الضغط).");
+    warnings.push({ ar: "تنفس بانتظام ولا تحبس النفس، وانهض ببطء (دواء الضغط).", en: "Breathe steadily, don't hold your breath, and get up slowly (BP medication)." });
   }
   return { score, warnings };
 }
 
-function describeDifferences(base: Exercise, alt: Exercise): string[] {
-  const d: string[] = [];
-  if (base.pattern !== alt.pattern) d.push(`نمط الحركة مختلف: ${PATTERNS[alt.pattern]} بدل ${PATTERNS[base.pattern]}.`);
+function describeDifferences(base: Exercise, alt: Exercise): Bi[] {
+  const d: Bi[] = [];
+  if (base.pattern !== alt.pattern) d.push({ ar: `نمط الحركة مختلف: ${PATTERNS[alt.pattern].ar} بدل ${PATTERNS[base.pattern].ar}.`, en: `Different movement pattern: ${PATTERNS[alt.pattern].en} instead of ${PATTERNS[base.pattern].en}.` });
   const isMachine = (e: Exercise) => e.equipment.some((x) => x.endsWith("_machine"));
-  const isFree = (e: Exercise) => e.equipment.includes("dumbbells") || e.equipment.includes("barbell_rack");
-  if (isMachine(base) && isFree(alt)) d.push("أوزان حرة بدل جهاز: يتطلب تحكمًا وتوازنًا أكبر؛ ابدأ بوزن أخف.");
-  if (isFree(base) && isMachine(alt)) d.push("جهاز بدل أوزان حرة: مسار ثابت وأسهل في التحكم، والأوزان غير قابلة للمقارنة مباشرة.");
-  if (base.equipment.includes("cable_station") !== alt.equipment.includes("cable_station") && alt.equipment.includes("cable_station"))
-    d.push("الكابل يعطي مقاومة ثابتة طوال الحركة.");
-  const onlyBase = base.primaryMuscles.filter((m) => !alt.primaryMuscles.includes(m));
-  if (onlyBase.length) d.push("لا يستهدف بنفس الدرجة بعض العضلات الرئيسية للتمرين الأصلي.");
-  if (LOAD_RANK[alt.kneeLoad] > LOAD_RANK[base.kneeLoad]) d.push("حمل أعلى على الركبة من التمرين الأصلي.");
-  if (LOAD_RANK[alt.backLoad] > LOAD_RANK[base.backLoad]) d.push("حمل أعلى على الظهر من التمرين الأصلي.");
-  if (LOAD_RANK[alt.kneeLoad] < LOAD_RANK[base.kneeLoad]) d.push("حمل أقل على الركبة.");
-  if (LOAD_RANK[alt.backLoad] < LOAD_RANK[base.backLoad]) d.push("حمل أقل على الظهر.");
-  const eqNames = alt.equipment.map((x) => EQUIPMENT[x].ar).join("، ");
-  d.push(`المعدات المطلوبة: ${eqNames}.`);
+  const isFree = (e: Exercise) => e.equipment.includes("dumbbells") || e.equipment.includes("barbell_rack") || e.equipment.includes("kettlebell") || e.equipment.includes("ez_bar");
+  if (isMachine(base) && isFree(alt)) d.push({ ar: "أوزان حرة بدل جهاز: يتطلب تحكمًا وتوازنًا أكبر؛ ابدأ بوزن أخف.", en: "Free weights instead of a machine: needs more control and balance; start lighter." });
+  if (isFree(base) && isMachine(alt)) d.push({ ar: "جهاز بدل أوزان حرة: مسار ثابت وأسهل في التحكم، والأوزان غير قابلة للمقارنة مباشرة.", en: "Machine instead of free weights: a fixed path that's easier to control; weights aren't directly comparable." });
+  if (!base.equipment.includes("cable_station") && alt.equipment.includes("cable_station")) d.push({ ar: "الكابل يعطي مقاومة ثابتة طوال الحركة.", en: "The cable gives constant tension through the movement." });
+  const onlyBase = base.primaryMuscles.filter((mm) => !alt.primaryMuscles.includes(mm));
+  if (onlyBase.length) d.push({ ar: "لا يستهدف بنفس الدرجة بعض العضلات الرئيسية للتمرين الأصلي.", en: "Doesn't hit some of the original's main muscles to the same degree." });
+  if (LOAD_RANK[alt.kneeLoad] > LOAD_RANK[base.kneeLoad]) d.push({ ar: "حمل أعلى على الركبة من التمرين الأصلي.", en: "More knee load than the original." });
+  if (LOAD_RANK[alt.backLoad] > LOAD_RANK[base.backLoad]) d.push({ ar: "حمل أعلى على الظهر من التمرين الأصلي.", en: "More back load than the original." });
+  if (LOAD_RANK[alt.kneeLoad] < LOAD_RANK[base.kneeLoad]) d.push({ ar: "حمل أقل على الركبة.", en: "Less knee load." });
+  if (LOAD_RANK[alt.backLoad] < LOAD_RANK[base.backLoad]) d.push({ ar: "حمل أقل على الظهر.", en: "Less back load." });
+  d.push({ ar: `المعدات المطلوبة: ${alt.equipment.map((x) => EQUIPMENT[x].ar).join("، ")}.`, en: `Equipment needed: ${alt.equipment.map((x) => EQUIPMENT[x].en).join(", ")}.` });
   return d;
+}
+
+/** هل التمرين يحمّل منطقة أُبلغ فيها عن ألم شديد؟ */
+export function loadsPainfulArea(e: Exercise, base: Exercise, areas: SubstitutionContext["severePain"] = []): boolean {
+  if (areas.includes("knee") && e.kneeLoad !== "low") return true;
+  if (areas.includes("back") && e.backLoad !== "low") return true;
+  if (areas.includes("other") && e.primaryMuscles.some((mm) => base.primaryMuscles.includes(mm))) return true;
+  return false;
 }
 
 export function evaluateCandidate(base: Exercise, alt: Exercise, ctx: SubstitutionContext): Candidate {
@@ -170,12 +179,12 @@ export function evaluateCandidate(base: Exercise, alt: Exercise, ctx: Substituti
   const health = healthAssessment(alt, ctx.conditions);
   const baseHealth = healthAssessment(base, ctx.conditions);
 
-  const unclearReasons: string[] = [];
-  if (similarity < 60) unclearReasons.push("التشابه مع التمرين الأصلي أقل من المتوسط.");
-  if (availability === "unavailable") unclearReasons.push("المعدات المطلوبة مسجلة كغير متوفرة.");
-  if (lf < 2) unclearReasons.push("مستوى التمرين أعلى من مستواك المسجل.");
-  if (health.score < baseHealth.score) unclearReasons.push("أقل توافقًا مع القيود الصحية من التمرين الأصلي.");
-  if (alt.reviewRequired) unclearReasons.push("التمرين مُعلَّم بأنه يحتاج مراجعة متخصص.");
+  const unclearReasons: Bi[] = [];
+  if (similarity < 60) unclearReasons.push({ ar: "التشابه مع التمرين الأصلي أقل من المتوسط.", en: "Below-average match with the original exercise." });
+  if (availability === "unavailable") unclearReasons.push({ ar: "المعدات المطلوبة مسجلة كغير متوفرة.", en: "The required equipment is marked as not available." });
+  if (lf < 2) unclearReasons.push({ ar: "مستوى التمرين أعلى من مستواك المسجل.", en: "The exercise is above your recorded level." });
+  if (health.score < baseHealth.score) unclearReasons.push({ ar: "أقل توافقًا مع القيود الصحية من التمرين الأصلي.", en: "Less compatible with your health limits than the original." });
+  if (alt.reviewRequired) unclearReasons.push({ ar: "التمرين مُعلَّم بأنه يحتاج مراجعة متخصص.", en: "This exercise is marked as needing a specialist's review." });
 
   return {
     exercise: alt,
@@ -211,6 +220,8 @@ export function compareCandidates(a: Candidate, b: Candidate): number {
 export interface RankResult {
   suggested: Candidate[];
   needsReview: Candidate[];
+  /** مستبعدة لأنها تحمّل منطقة بها ألم شديد الآن */
+  blockedByPain: Candidate[];
 }
 
 export function rankAlternatives(base: Exercise, pool: Exercise[], ctx: SubstitutionContext): RankResult {
@@ -218,9 +229,11 @@ export function rankAlternatives(base: Exercise, pool: Exercise[], ctx: Substitu
     .filter((e) => e.id !== base.id && e.kind === base.kind)
     .map((e) => evaluateCandidate(base, e, ctx))
     .filter((c) => c.similarity >= 25);
-  const suggested = evaluated.filter((c) => !c.exercise.reviewRequired).sort(compareCandidates);
+  const painful = (c: Candidate) => loadsPainfulArea(c.exercise, base, ctx.severePain);
+  const suggested = evaluated.filter((c) => !c.exercise.reviewRequired && !painful(c)).sort(compareCandidates);
   const needsReview = evaluated.filter((c) => c.exercise.reviewRequired).sort(compareCandidates);
-  return { suggested, needsReview };
+  const blockedByPain = evaluated.filter((c) => !c.exercise.reviewRequired && painful(c)).sort(compareCandidates);
+  return { suggested, needsReview, blockedByPain };
 }
 
 /** البديل الأول والثاني: من القائمة المنتقاة يدويًا أولًا، ثم من المحرك إذا نقصت */
@@ -228,7 +241,7 @@ export function primaryAlternatives(base: Exercise, all: Record<string, Exercise
   const out: Candidate[] = [];
   for (const id of base.alternatives) {
     const e = all[id];
-    if (e && !e.reviewRequired && out.length < 2) out.push(evaluateCandidate(base, e, ctx));
+    if (e && !e.reviewRequired && !loadsPainfulArea(e, base, ctx.severePain) && out.length < 2) out.push(evaluateCandidate(base, e, ctx));
   }
   if (out.length < 2) {
     const ranked = rankAlternatives(base, Object.values(all), ctx).suggested;

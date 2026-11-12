@@ -71,7 +71,7 @@ export function useSchedule(): { schedule: ScheduledSession[]; loaded: boolean; 
 export function useSearchParam(name: string): string | null {
   const [value, setValue] = useState<string | null>(null);
   useEffect(() => {
-    const read = () => setValue(new URLSearchParams(window.location.search).get(name));
+    const read = () => setValue(new URLSearchParams(window.location.search).get(name) ?? "");
     read();
     window.addEventListener("popstate", read);
     return () => window.removeEventListener("popstate", read);
