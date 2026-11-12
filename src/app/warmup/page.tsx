@@ -9,18 +9,19 @@ import { WARMUP_BY_SLOT, WARMUP_MAP, type WarmupMove } from "@/data/warmup";
 import { db } from "@/lib/db";
 import { useSchedule, useSearchParam } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
-import { mediaFor, ytEmbed, ytThumb } from "@/lib/media";
+import { mediaFor, ytEmbed } from "@/lib/media";
+import { RigSvg } from "@/components/rig/Rig";
+import { TEMPLATES } from "@/lib/rigMap";
 import { pickCurrentSession } from "@/lib/schedule";
 import { saveWorkout, startOrResumeWorkout } from "@/lib/workout";
 
-const AREA_ICON: Record<string, string> = { shoulders: "🙆‍♂️", back: "🧍‍♂️", core: "🔄", glutes: "🦵", quads: "🦵", chest: "🙌", triceps: "💪" };
-
+/** صورة الحركة: رسم متحرك لشخصية راجل (يعمل بدون إنترنت)، والفيديو اختياري لو موجود */
 function MoveMedia({ move, big = false }: { move: WarmupMove; big?: boolean }) {
   const { L, pick } = useI18n();
   const v = mediaFor(move.id).video;
+  const tpl = TEMPLATES[move.id];
   const [play, setPlay] = useState(false);
-  const [broken, setBroken] = useState(false);
-  const h = big ? 230 : 96;
+  const h = big ? 230 : 110;
   if (v && play && big)
     return (
       <div className="relative overflow-hidden rounded-[22px] bg-black" style={{ height: h }}>
@@ -28,27 +29,18 @@ function MoveMedia({ move, big = false }: { move: WarmupMove; big?: boolean }) {
       </div>
     );
   return (
-    <div className="hero relative overflow-hidden rounded-[22px]" style={{ height: h }}>
-      {v && !broken ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={ytThumb(v.id)} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setBroken(true)} />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <span className={big ? "text-6xl" : "text-3xl"}>{AREA_ICON[move.areaMuscles[0]] ?? "🔥"}</span>
-          {big && <span className="mt-1 text-xs opacity-80">{L("لا يوجد فيديو موثّق بعد لهذه الحركة", "No verified video for this move yet")}</span>}
-        </div>
-      )}
-      {v && (
+    <div className="relative overflow-hidden rounded-[22px] bg-[#11161d]" style={{ height: h }} data-testid="warmup-animation">
+      {tpl ? <RigSvg tpl={tpl} k={big ? undefined : 0.3} label={pick(move.name)} className="h-full" /> : <div className="hero absolute inset-0" />}
+      {big && <span className="absolute start-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-bold text-white">🎬 {L("رسم متحرك", "Animated")}</span>}
+      {v && big && (
         <button
-          className={`absolute inset-0 m-auto flex items-center justify-center rounded-full bg-white/95 text-black shadow-lg ${big ? "h-14 w-14" : "h-8 w-8"}`}
-          onClick={() => big && setPlay(true)}
+          className="absolute bottom-2 end-2 flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-black shadow-lg"
+          onClick={() => setPlay(true)}
           aria-label={L("تشغيل فيديو المدرب", "Play coach video")}
-          tabIndex={big ? 0 : -1}
         >
-          <PlayIcon size={big ? 24 : 13} />
+          <PlayIcon size={14} /> {L("فيديو", "Video")}
         </button>
       )}
-      {v && big && <span className="ltr absolute bottom-2 start-2 rounded-full bg-black/55 px-2 py-0.5 text-[11px] text-white">▶ {v.channel}</span>}
     </div>
   );
 }

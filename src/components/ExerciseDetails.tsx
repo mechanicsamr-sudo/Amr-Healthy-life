@@ -9,6 +9,8 @@ import { searchLinks } from "@/lib/search";
 import { healthAssessment } from "@/lib/substitution";
 import type { Exercise, MistakeCategory, Settings } from "@/lib/types";
 import ExerciseMedia from "./ExerciseMedia";
+import { RigSvg } from "./rig/Rig";
+import { comparisonsFor } from "@/lib/rigMap";
 import { IconAlert, IconCheck, IconExternal, IconSwap } from "./icons";
 import { Alert, Badge } from "./ui";
 
@@ -62,8 +64,10 @@ export function MistakesList({ e }: { e: Exercise }) {
   const { lang, pick, L } = useI18n();
   const t = exerciseText(e, lang);
   const drawings = mediaFor(e.id).drawings;
+  const comps = comparisonsFor(e.id, e.pattern, t.mistakes);
   return (
     <div data-testid="mistakes-list">
+      {comps.length > 0 && <p className="mb-2 text-sm text-muted">{L("الصور: ✕ الغلط مقابل ✓ الصح بنفس الزاوية، والدايرة على مكان المشكلة.", "Pictures: ✕ wrong vs ✓ correct from the same angle; the circle marks the problem area.")}</p>}
       {(t.posture || t.range) && (
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
           {drawings && (
@@ -97,6 +101,28 @@ export function MistakesList({ e }: { e: Exercise }) {
                   <b>{pick(m.title)}</b>
                   <Badge tone={m.cat === "safety" ? "red" : m.cat === "breathing" ? "blue" : "neutral"}>{pick(CAT_LABEL[m.cat])}</Badge>
                 </div>
+                {(() => {
+                  const c = comps.find((x) => x.mistakeIndex === i);
+                  if (!c) return null;
+                  return (
+                    <div className="mt-2 grid grid-cols-2 gap-2" data-testid="mistake-compare">
+                      <div className="relative overflow-hidden rounded-2xl border-2 border-red-500">
+                        <RigSvg tpl={c.wrong} k={c.wrongK} tint="wrong" mark={c.mark} label={`${L("غلط", "Wrong")}: ${pick(m.title)}`} />
+                        <span className="absolute start-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-xs font-black text-white">✕ {L("غلط", "Wrong")}</span>
+                      </div>
+                      <div className="relative overflow-hidden rounded-2xl border-2 border-green-500">
+                        <RigSvg tpl={c.right} k={c.rightK} tint="right" mark={c.mark} label={`${L("صح", "Correct")}: ${pick(m.fix)}`} />
+                        <span className="absolute start-2 top-2 rounded-full bg-green-600 px-2 py-0.5 text-xs font-black text-white">✓ {L("صح", "Correct")}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {m.cat === "breathing" && (
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-center text-sm font-bold">
+                    <div className="rounded-2xl border-2 border-red-500 bg-red-500/10 p-2.5"><span className="text-2xl">😤</span><br />{L("كاتم نفسك", "Holding breath")}</div>
+                    <div className="rounded-2xl border-2 border-green-500 bg-green-500/10 p-2.5"><span className="text-2xl">💨</span><br />{L("طلّع النفس مع المجهود", "Exhale on the effort")}</div>
+                  </div>
+                )}
                 {pick(m.why) && (
                   <div className="mt-2 grid gap-1.5 text-sm">
                     <div className="rounded-xl bg-red-500/10 px-3 py-2">

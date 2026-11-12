@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ExerciseThumb } from "@/components/ExerciseMedia";
 import { IconPlus, IconSearch } from "@/components/icons";
 import { Badge, Loading, PageHeader } from "@/components/ui";
-import { CATEGORIES, EQUIPMENT_INFO, relatedExercises, type EquipmentCategory } from "@/data/equipment";
+import { mediaFor } from "@/lib/media";
+import { CATEGORIES, EQUIPMENT_INFO, illustrationExercise, relatedExercises, type EquipmentCategory } from "@/data/equipment";
 import { exerciseText } from "@/lib/exerciseText";
 import { useExercises, useSettings } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
@@ -166,12 +167,13 @@ export default function LibraryPage() {
         <ul className="grid grid-cols-2 gap-2" data-testid="equipment-list">
           {equipment.map((info) => {
             const rel = relatedExercises(info.id);
-            const picEx = rel.map((id) => map[id]).find(Boolean);
+            const picId = illustrationExercise(info.id, (x) => !!mediaFor(x).drawings && !!map[x]);
+            const picEx = (picId && map[picId]) || rel.map((id) => map[id]).find(Boolean);
             return (
               <li key={info.id}>
                 <Link href={`/equipment/?id=${info.id}`} className="card block overflow-hidden p-0 active:opacity-80" data-testid="equipment-card">
                   <div className="relative">
-                    {picEx ? <ExerciseThumb exercise={picEx} className="h-28 w-full" rounded="rounded-none" /> : <div className="hero h-28" />}
+                    {picEx ? <ExerciseThumb exercise={picEx} className="h-28 w-full" rounded="rounded-none" /> : <div className="flex h-28 flex-col items-center justify-center bg-[rgb(var(--surface-2))] text-[11px] text-muted"><span className="text-2xl">🏋️</span>{L("لا توجد صورة بعد", "No image yet")}</div>}
                     <span className="absolute end-1.5 top-1.5">{availBadge(settings.equipment[info.id] ?? "unknown")}</span>
                   </div>
                   <div className="p-2">

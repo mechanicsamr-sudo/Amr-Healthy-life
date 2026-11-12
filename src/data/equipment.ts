@@ -113,3 +113,9 @@ export function relatedExercises(id: EquipmentId): string[] {
   const fromData = EXERCISES.filter((e) => e.equipment.includes(id)).map((e) => e.id);
   return [...new Set([...fromData, ...(info?.extraExercises ?? [])])];
 }
+
+/** أنسب تمرين لصورة الجهاز: اللي ليه رسم واقعي الأول، وبعدين أي تمرين مرتبط (هيظهر برسم متحرك). */
+export function illustrationExercise(id: EquipmentId, hasDrawing: (exerciseId: string) => boolean): string | null {
+  const rel = relatedExercises(id);
+  return rel.find(hasDrawing) ?? rel[0] ?? null;
+}
