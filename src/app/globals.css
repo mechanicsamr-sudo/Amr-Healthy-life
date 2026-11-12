@@ -1,33 +1,30 @@
 @import "@fontsource/ibm-plex-sans-arabic/400.css";
 @import "@fontsource/ibm-plex-sans-arabic/500.css";
 @import "@fontsource/ibm-plex-sans-arabic/700.css";
+@import "@fontsource/cairo/arabic-900.css";
+@import "@fontsource/cairo/latin-900.css";
+@import "@fontsource/oswald/latin-700.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* القيم الافتراضية = سبورت ديناميك داكن. AppShell يستبدلها حسب الثيم المختار. */
 :root {
-  color-scheme: light;
-  --bg: 246 247 249;
-  --surface: 255 255 255;
-  --surface-2: 241 243 246;
-  --text: 17 24 39;
-  --muted: 95 105 120;
-  --border: 226 230 236;
-  /* ألوان السلاسل من لوحة مُتحقق منها لعمى الألوان */
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --grid: #e5e7eb;
-}
-
-.dark {
   color-scheme: dark;
-  --bg: 13 17 23;
-  --surface: 22 27 34;
-  --surface-2: 31 38 47;
-  --text: 230 237 243;
-  --muted: 150 160 172;
-  --border: 48 56 66;
+  --bg: 11 10 30;
+  --surface: 21 23 42;
+  --surface-2: 31 34 56;
+  --text: 255 255 255;
+  --muted: 169 174 196;
+  --border: 44 47 72;
+  --accent: 166 255 61;
+  --accent-strong: 198 255 120;
+  --on-accent: 14 22 4;
+  --go: 91 227 107;
+  --on-go: 8 36 12;
+  --hero: radial-gradient(circle at 15% 8%, #3bc9ff 0, transparent 42%), radial-gradient(circle at 95% 35%, #9b5cff 0, transparent 48%), radial-gradient(circle at 55% 105%, #ff7a3d 0, transparent 50%), #17123a;
+  --hero-text: 255 255 255;
   --series-1: #3987e5;
   --series-2: #d95926;
   --grid: #30363d;
@@ -42,13 +39,24 @@ body {
 body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border p-4 shadow-sm;
+    @apply rounded-[20px] border p-4;
     background: rgb(var(--surface));
     border-color: rgb(var(--border));
+  }
+  .glass {
+    @apply rounded-[20px] border;
+    background: rgb(var(--surface) / 0.55);
+    border-color: rgb(255 255 255 / 0.12);
+    backdrop-filter: blur(14px);
+  }
+  .hero {
+    background: var(--hero);
+    color: rgb(var(--hero-text));
   }
   .surface-2 {
     background: rgb(var(--surface-2));
@@ -56,48 +64,126 @@ body {
   .text-muted {
     color: rgb(var(--muted));
   }
+  .text-accent {
+    color: rgb(var(--accent-strong));
+  }
   .border-base {
     border-color: rgb(var(--border));
   }
+  .display {
+    font-family: "Cairo", "IBM Plex Sans Arabic", sans-serif;
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+  }
+  :lang(en) .display,
+  .display:lang(en) {
+    font-family: "Oswald", "IBM Plex Sans Arabic", sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 0.98;
+  }
   .btn {
-    @apply inline-flex min-h-tap items-center justify-center gap-2 rounded-xl px-4 py-2 text-base font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-tap items-center justify-center gap-2 rounded-2xl px-4 py-2 text-base font-bold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+    @apply btn;
+    background: rgb(var(--accent));
+    color: rgb(var(--on-accent));
+  }
+  .btn-go {
+    @apply btn rounded-full;
+    background: rgb(var(--go));
+    color: rgb(var(--on-go));
+    box-shadow: 0 8px 22px rgb(var(--go) / 0.28);
   }
   .btn-secondary {
     @apply btn border;
     background: rgb(var(--surface-2));
     border-color: rgb(var(--border));
+    color: rgb(var(--text));
   }
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700;
   }
   .btn-ghost {
-    @apply btn;
+    @apply btn font-medium;
   }
   .input {
-    @apply min-h-tap w-full rounded-xl border px-3 py-2 text-base outline-none focus:ring-2 focus:ring-brand-500;
+    @apply min-h-tap w-full rounded-2xl border px-3 py-2 text-base outline-none;
     background: rgb(var(--surface));
     border-color: rgb(var(--border));
     color: rgb(var(--text));
+  }
+  .input:focus {
+    box-shadow: 0 0 0 2px rgb(var(--accent) / 0.6);
   }
   .label {
     @apply mb-1 block text-sm font-medium text-muted;
   }
   .chip {
-    @apply inline-flex items-center rounded-full border px-3 py-1 text-sm;
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-sm font-medium;
     border-color: rgb(var(--border));
+    background: rgb(var(--surface-2));
   }
   .chip-active {
-    @apply border-brand-600 bg-brand-600 text-white;
+    background: rgb(var(--accent));
+    border-color: rgb(var(--accent));
+    color: rgb(var(--on-accent));
+  }
+  /* اختيار من متعدد بأزرار كبيرة */
+  .choice {
+    @apply flex min-h-tap flex-col items-center justify-center rounded-2xl border-2 px-2 py-2 text-center text-sm font-bold leading-tight transition;
+    background: rgb(var(--surface-2));
+    border-color: rgb(var(--border));
+  }
+  .choice[aria-pressed="true"],
+  .choice[aria-checked="true"] {
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 3px rgb(var(--accent) / 0.22);
+    background: rgb(var(--accent) / 0.12);
+  }
+  .choice .sub {
+    @apply mt-0.5 text-[11px] font-normal text-muted;
+  }
+  .choice.danger[aria-pressed="true"] {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgb(239 68 68 / 0.22);
+    background: rgb(239 68 68 / 0.14);
+  }
+  .level-easy {
+    @apply bg-green-600 text-white;
+  }
+  .level-med {
+    @apply bg-blue-700 text-white;
+  }
+  .level-hard {
+    @apply bg-red-600 text-white;
   }
 }
 
-/* الأرقام والقيم الإنجليزية داخل نص عربي */
 .ltr {
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+@keyframes pop-in {
+  from {
+    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.animate-pop {
+  animation: pop-in 0.28s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop {
+    animation: none;
+  }
 }
 
 @media print {
@@ -113,6 +199,7 @@ body {
     break-inside: avoid;
     border-color: #ccc !important;
     background: white !important;
+    color: black !important;
   }
   main {
     padding-bottom: 0 !important;

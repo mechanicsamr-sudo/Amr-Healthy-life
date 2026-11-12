@@ -2,6 +2,7 @@
 const VERSION = "__VERSION__";
 const CACHE = "gym-app-" + VERSION;
 const PRECACHE = __PRECACHE__;
+const BASE = "__BASE__";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -45,7 +46,7 @@ self.addEventListener("fetch", (event) => {
           }
           return res;
         })
-        .catch(async () => (await caches.match(pageKey(url), { ignoreSearch: true })) || (await caches.match("/")) || Response.error()),
+        .catch(async () => (await caches.match(pageKey(url), { ignoreSearch: true })) || (await caches.match(BASE + "/")) || Response.error()),
     );
     return;
   }

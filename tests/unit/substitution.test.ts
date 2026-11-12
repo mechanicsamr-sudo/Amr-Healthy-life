@@ -40,8 +40,8 @@ describe("محرك البدائل", () => {
   });
   it("تحذيرات الركبة تظهر عند وجود الخشونة فقط", () => {
     const withKnee = evaluateCandidate(EXERCISE_MAP.leg_press, EXERCISE_MAP.step_up_low, ctx);
-    expect(withKnee.healthWarnings.join(" ")).toContain("الركبة");
+    expect(withKnee.healthWarnings.map((w) => w.ar).join(" ")).toContain("الركبة");
     const noKnee = evaluateCandidate(EXERCISE_MAP.leg_press, EXERCISE_MAP.step_up_low, { ...ctx, conditions: { ...ctx.conditions, kneeOA: false } });
-    expect(noKnee.healthWarnings.join(" ")).not.toContain("الركبة");
+    expect(noKnee.healthWarnings.map((w) => w.ar).join(" ")).not.toContain("الركبة");
   });
 });

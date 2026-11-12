@@ -155,3 +155,13 @@ export async function resetSessionExercises(sessionId: string, database: GymDB =
   const { exercises: _drop, ...rest } = prev;
   await database.overrides.put({ ...rest, updatedAt: Date.now() });
 }
+
+export type EntryStatus = "completed" | "skipped" | "replaced" | "partial" | "pending";
+
+/** حالة التمرين في الحصة: تم / لم يتم / استبدلت */
+export function entryStatus(e: ExerciseEntry): EntryStatus {
+  if (e.skipped) return "skipped";
+  const done = e.sets.filter((s) => s.done).length;
+  if (done === e.sets.length && done > 0) return e.substituted ? "replaced" : "completed";
+  return done > 0 ? "partial" : "pending";
+}

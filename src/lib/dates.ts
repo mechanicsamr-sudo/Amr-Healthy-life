@@ -38,36 +38,43 @@ export function isValidISODate(s: string): boolean {
   return !Number.isNaN(d.getTime()) && toISODate(d) === s;
 }
 
+export type DateLang = "ar" | "en";
+const LOCALE: Record<DateLang, string> = { ar: "ar-EG-u-nu-latn", en: "en-GB" };
+
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
-function fmt(opts: Intl.DateTimeFormatOptions) {
-  const key = JSON.stringify(opts);
+function fmt(opts: Intl.DateTimeFormatOptions, lang: DateLang) {
+  const key = lang + JSON.stringify(opts);
   let f = fmtCache.get(key);
   if (!f) {
-    // أرقام لاتينية لسهولة القراءة أثناء التمرين مع أسماء الأيام والشهور بالعربية
-    f = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { timeZone: "UTC", ...opts });
+    // أرقام لاتينية لسهولة القراءة أثناء التمرين
+    f = new Intl.DateTimeFormat(LOCALE[lang], { timeZone: "UTC", ...opts });
     fmtCache.set(key, f);
   }
   return f;
 }
 
-export function formatDateLong(iso: string): string {
-  return fmt({ weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(parseISODate(iso));
+export function formatDateLong(iso: string, lang: DateLang = "ar"): string {
+  return fmt({ weekday: "long", day: "numeric", month: "long", year: "numeric" }, lang).format(parseISODate(iso));
 }
 
-export function formatDateShort(iso: string): string {
-  return fmt({ day: "numeric", month: "short" }).format(parseISODate(iso));
+export function formatDateShort(iso: string, lang: DateLang = "ar"): string {
+  return fmt({ day: "numeric", month: "short" }, lang).format(parseISODate(iso));
 }
 
-export function formatDateMedium(iso: string): string {
-  return fmt({ weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(parseISODate(iso));
+export function formatDateMedium(iso: string, lang: DateLang = "ar"): string {
+  return fmt({ weekday: "short", day: "numeric", month: "short", year: "numeric" }, lang).format(parseISODate(iso));
 }
 
-export function formatMonth(iso: string): string {
-  return fmt({ month: "long", year: "numeric" }).format(parseISODate(iso));
+export function formatDayName(iso: string, lang: DateLang = "ar"): string {
+  return fmt({ weekday: "short" }, lang).format(parseISODate(iso));
 }
 
-export function formatTime(ts: number): string {
-  return new Intl.DateTimeFormat("ar-EG-u-nu-latn", { hour: "numeric", minute: "2-digit" }).format(new Date(ts));
+export function formatMonth(iso: string, lang: DateLang = "ar"): string {
+  return fmt({ month: "long", year: "numeric" }, lang).format(parseISODate(iso));
+}
+
+export function formatTime(ts: number, lang: DateLang = "ar"): string {
+  return new Intl.DateTimeFormat(LOCALE[lang], { hour: "numeric", minute: "2-digit" }).format(new Date(ts));
 }
 
 export function formatDuration(sec: number): string {
