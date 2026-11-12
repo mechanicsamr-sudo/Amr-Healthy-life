@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ExerciseThumb } from "@/components/ExerciseMedia";
 import { IconAlert } from "@/components/icons";
 import { Alert, Badge, Choice, Loading, PageHeader, Section } from "@/components/ui";
-import { CATEGORIES, EQUIPMENT_INFO_MAP, relatedExercises } from "@/data/equipment";
+import { CATEGORIES, EQUIPMENT_INFO_MAP, illustrationExercise, relatedExercises } from "@/data/equipment";
+import { mediaFor } from "@/lib/media";
 import { updateSettings } from "@/lib/db";
 import { exerciseText } from "@/lib/exerciseText";
 import { useExercises, useSearchParam, useSettings } from "@/lib/hooks";
@@ -21,7 +22,8 @@ export default function EquipmentPage() {
   const info = EQUIPMENT_INFO_MAP[id];
   if (!info) return <PageHeader title={L("غير موجود", "Not found")} back="/library/" />;
   const rel = relatedExercises(info.id).map((x) => map[x]).filter(Boolean);
-  const pic = rel[0];
+  const picId = illustrationExercise(info.id, (x) => !!mediaFor(x).drawings && !!map[x]);
+  const pic = (picId && map[picId]) || rel[0];
   const name = EQUIPMENT[info.id];
 
   return (

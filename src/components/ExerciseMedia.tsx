@@ -8,6 +8,8 @@ import { mediaFor, ytEmbed, ytThumb, ytWatch } from "@/lib/media";
 import { searchLinks } from "@/lib/search";
 import type { Exercise } from "@/lib/types";
 import { IconExternal, IconImage } from "./icons";
+import { RigSvg } from "./rig/Rig";
+import { TEMPLATES, templateIdFor } from "@/lib/rigMap";
 
 function useOnline() {
   const [online, setOnline] = useState(true);
@@ -33,7 +35,7 @@ export function PlayIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-/** أفضل صورة متاحة: صورة المستخدم ← صورة حقيقية ← رسم واقعي ← غلاف الفيديو (أونلاين) */
+/** أفضل صورة متاحة: صورة المستخدم ← صورة حقيقية ← رسم واقعي ← رسم متحرك (بدون إنترنت) ← غلاف الفيديو (أونلاين) */
 export function useExercisePicture(e: Exercise) {
   const media = useLiveQuery(() => db.media.get(e.id), [e.id]);
   const m = mediaFor(e.id);
@@ -42,6 +44,8 @@ export function useExercisePicture(e: Exercise) {
   if (user) return { src: user, kind: "user" as const, credit: media?.source ?? null, contain: false };
   if (m.photo) return { src: m.photo.src, kind: "photo" as const, credit: `${m.photo.credit.author} · ${m.photo.credit.license}`, contain: false };
   if (m.drawings) return { src: m.drawings[0].src, kind: "drawing" as const, credit: `${m.drawings[0].credit.author} · ${m.drawings[0].credit.license}`, contain: true };
+  const tid = templateIdFor(e.id, e.pattern);
+  if (tid) return { src: null, kind: "animation" as const, credit: null, contain: false, tpl: TEMPLATES[tid] };
   if (m.video && online) return { src: ytThumb(m.video.id), kind: "video" as const, credit: m.video.channel, contain: false };
   return { src: null, kind: "none" as const, credit: null, contain: false };
 }
@@ -53,7 +57,9 @@ export function ExerciseThumb({ exercise, className = "", rounded = "rounded-2xl
   const hasVideo = !!mediaFor(exercise.id).video;
   return (
     <div className={`relative overflow-hidden ${rounded} ${pic.kind === "drawing" ? "bg-gradient-to-br from-orange-100 to-violet-200" : "hero"} ${className}`}>
-      {pic.src && !broken ? (
+      {pic.kind === "animation" && pic.tpl ? (
+        <RigSvg tpl={pic.tpl} k={0.35} label={exercise.nameEn} className="h-full" />
+      ) : pic.src && !broken ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={pic.src}
@@ -90,6 +96,7 @@ export default function ExerciseMedia({ exercise, height = 240 }: { exercise: Ex
     photo: L("صورة حقيقية", "Real photo"),
     drawing: L("رسم واقعي", "Realistic drawing"),
     video: L("غلاف الفيديو", "Video cover"),
+    animation: L("رسم متحرك توضيحي (يعمل بدون إنترنت)", "Animated illustration (works offline)"),
     none: L("لا توجد صورة موثقة بعد", "No verified image yet"),
   }[pic.kind];
 
@@ -117,7 +124,9 @@ export default function ExerciseMedia({ exercise, height = 240 }: { exercise: Ex
           )
         ) : (
           <>
-            {pic.src && !broken ? (
+            {pic.kind === "animation" && pic.tpl ? (
+              <div className="absolute inset-0" data-testid="exercise-animation"><RigSvg tpl={pic.tpl} label={`${exercise.nameAr} – ${exercise.nameEn}`} className="h-full" /></div>
+            ) : pic.src && !broken ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={pic.src}
@@ -134,7 +143,7 @@ export default function ExerciseMedia({ exercise, height = 240 }: { exercise: Ex
             )}
             {m.video && (
               <button
-                className="absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-black shadow-xl transition active:scale-95"
+                className={pic.kind === "animation" ? "absolute bottom-3 end-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-black shadow-xl transition active:scale-95" : "absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-black shadow-xl transition active:scale-95"}
                 onClick={() => setPlaying(true)}
                 aria-label={L("تشغيل فيديو المدرب", "Play coach video")}
                 data-testid="play-video"
