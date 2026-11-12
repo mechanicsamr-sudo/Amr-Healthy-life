@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
+import { BASE } from "@/lib/base";
 import { themeBootScript } from "@/lib/themes";
 
 export const metadata: Metadata = {
   title: "برنامجي الرياضي",
   description: "تطبيق شخصي لإدارة برنامج الجيم لمدة 6 شهور · Personal 6-month gym program app – works offline, data stays on your device",
-  manifest: "/manifest.webmanifest",
+  manifest: `${BASE}/manifest.webmanifest`,
   applicationName: "برنامجي الرياضي",
   appleWebApp: { capable: true, title: "برنامجي", statusBarStyle: "default" },
   icons: {
-    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    icon: [{ url: `${BASE}/icons/icon-192.png`, sizes: "192x192", type: "image/png" }],
+    apple: [{ url: `${BASE}/icons/apple-touch-icon.png`, sizes: "180x180" }],
   },
 };
 

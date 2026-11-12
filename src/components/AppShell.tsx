@@ -1,5 +1,6 @@
 "use client";
 
+import { BASE } from "@/lib/base";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -49,7 +50,7 @@ function useServiceWorker() {
       location.reload();
     });
     navigator.serviceWorker
-      .register("/sw.js")
+      .register(`${BASE}/sw.js`, { scope: `${BASE}/` })
       .then((reg) => {
         if (reg.waiting && navigator.serviceWorker.controller) setWaiting(reg.waiting);
         reg.addEventListener("updatefound", () => {

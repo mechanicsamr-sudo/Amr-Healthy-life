@@ -4,6 +4,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 const OUT = "out";
+const BASE = process.env.BASE_PATH || "";
 const files = [];
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -21,10 +22,10 @@ for (const f of files.sort()) {
   hash.update(rel);
   hash.update(readFileSync(f));
   // صفحات HTML تُخزن بعنوان المجلد (/library/) كما يطلبها المتصفح
-  urls.push(rel.endsWith("/index.html") ? rel.slice(0, -"index.html".length) : rel);
+  urls.push(BASE + (rel.endsWith("/index.html") ? rel.slice(0, -"index.html".length) : rel));
 }
 const version = hash.digest("hex").slice(0, 12);
 const template = readFileSync("scripts/sw-template.js", "utf8");
-const sw = template.replace("__VERSION__", version).replace("__PRECACHE__", JSON.stringify(urls));
+const sw = template.replace("__VERSION__", version).replace("__PRECACHE__", JSON.stringify(urls)).replace("__BASE__", BASE);
 writeFileSync(join(OUT, "sw.js"), sw);
 console.log(`sw.js generated: version ${version}, ${urls.length} files precached`);
